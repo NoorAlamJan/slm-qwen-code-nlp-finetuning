@@ -125,5 +125,5 @@ Open `02_qwen25_500m.ipynb` in VS Code or JupyterLab and run cells top to bottom
 ## Author
 
 **Noor Alam**  
-MS Data Science  
+Data Science  
 [GitHub](https://github.com/NoorAlamJan) · [LinkedIn](https://linkedin.com/in/noor-alam-0a7122209)
