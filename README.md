@@ -4,10 +4,9 @@
 
 ## Overview
 
-This repository contains the full experimental pipeline for my MS thesis investigating how code data in pretraining affects the reasoning, language, and coding capabilities of Small Language Models (SLMs). The study replicates and extends the findings of Aryabumi et al. (2024) using **TinyLlama** as the base model, with controlled data mixture experiments and benchmark-driven evaluation.
+This repository contains the full experimental pipeline for my MS thesis investigating how **code data mixture ratios** affect the capabilities of Small Language Models (SLMs). Using **Qwen2.5-0.5B** as the base model, we run controlled fine-tuning experiments across 7 dataset mixtures and evaluate the impact on language understanding, reasoning, and coding ability.
 
 The central research questions are:
-
 - Does exposure to code data during fine-tuning improve reasoning on non-code tasks?
 - What is the optimal mixture ratio of code vs. natural language data for SLMs?
 - How do these effects compare to findings reported for larger models?
@@ -18,12 +17,12 @@ The central research questions are:
 
 ```
 .
-├── data/                   # Cached datasets (auto-created)
-├── cache/                  # HuggingFace model/dataset cache
-├── results/                # Training checkpoints and logs
-├── slm_thesis.py           # Main training script
-├── evaluate.py             # Benchmark evaluation script (coming soon)
-├── notebooks/              # Analysis and visualization notebooks
+├── data/                     # Cached datasets (auto-created)
+├── cache/                    # HuggingFace model/dataset cache
+├── results/                  # Evaluation results (JSON)
+├── models/                   # Fine-tuned checkpoints
+│   └── qwen25_500m/          # Per-mixture model outputs
+├── 02_qwen25_500m.ipynb      # Main training & evaluation notebook
 └── README.md
 ```
 
@@ -33,61 +32,75 @@ The central research questions are:
 
 | Setting | Value |
 |---|---|
-| Base Model | TinyLlama/TinyLlama-1.1B-Chat-v1.0 |
-| Fine-tuning Method | LoRA (r=16, α=32) |
+| Base Model | Qwen/Qwen2.5-0.5B |
+| Fine-tuning Method | Full fine-tune + LoRA (r=16, α=32) |
 | Max Sequence Length | 512 tokens |
-| Effective Batch Size | 16 (1 × 16 grad accum) |
+| Effective Batch Size | 16 (batch=1 × grad accum=16) |
 | Learning Rate | 2e-4 |
 | Epochs | 1 |
-| Hardware | Apple M-series (MPS) / CUDA |
+| Hardware | Apple Silicon (MPS / float16) / CUDA (bfloat16) |
 
-### Data Mixtures
+---
 
-| Run | Natural Language | Code |
+## Datasets
+
+| ID | Description | Source |
 |---|---|---|
-| Baseline | 100% | 0% |
-| Code-only | 0% | 100% |
-| Mixed-30 | 70% | 30% |
-| Mixed-50 | 50% | 50% |
+| D1 | NLP text (10k) | DKYoon/SlimPajama-6B |
+| D2 | Python code (10k) | bigcode/the-stack |
+| D3 | Java code (10k) | bigcode/the-stack |
+| D4 | C++ code (10k) | bigcode/the-stack |
+| D5 | Python ∪ Java ∪ C++ balanced (10k) | bigcode/the-stack |
 
-Datasets used: `roneneldan/TinyStories`, `Salesforce/wikitext`, `codeparrot/github-code`
+### Mixture Datasets
+
+| ID | Text % | Code % |
+|---|---|---|
+| M1 | 100% | 0% |
+| M2 | 0% | 100% |
+| M3 | 70% | 30% |
+| M4 | 30% | 70% |
+| M5 | 75% | 25% |
+| M6 | 25% | 75% |
+| M7 | 50% | 50% |
+
+---
+
+## Experiments
+
+13 checkpoints trained in total:
+
+- **NFT** — base model, no fine-tuning (evaluation only)
+- **7 full fine-tune runs** — one per mixture (M1–M7)
+- **4 pure-code runs** — Python, Java, C++, Union (D2–D5)
+- **1 LoRA run** — M1 (text-only) with LoRA adapters
 
 ---
 
 ## Getting Started
 
 ### 1. Clone the repo
-
 ```bash
-git clone https://github.com/NoorAlamJan/slm-code-impact
-cd slm-code-impact
+git clone https://github.com/NoorAlamJan/slm-qwen-code-nlp-finetuning.git
+cd slm-qwen-code-nlp-finetuning
 ```
 
 ### 2. Set up environment (Python 3.11 recommended)
-
 ```bash
 python3.11 -m venv ml_env
 source ml_env/bin/activate
-pip install --upgrade pip
-pip install transformers datasets peft accelerate bitsandbytes tqdm
+pip install transformers datasets peft accelerate lm-eval bitsandbytes tqdm
 ```
 
 ### 3. Set your HuggingFace token
-
 ```bash
 export HF_TOKEN=your_token_here
 ```
 
-### 4. Run training
+> You need to accept the [bigcode/the-stack](https://huggingface.co/datasets/bigcode/the-stack) terms on HuggingFace before downloading.
 
-```bash
-python slm_thesis.py
-```
-
-The script auto-detects your hardware:
-- **NVIDIA GPU** → CUDA + bfloat16
-- **Apple Silicon** → MPS + float32
-- **CPU** → float32 fallback
+### 4. Run the notebook
+Open `02_qwen25_500m.ipynb` in VS Code or JupyterLab and run cells top to bottom. The notebook auto-detects your hardware (MPS / CUDA / CPU).
 
 ---
 
@@ -95,17 +108,22 @@ The script auto-detects your hardware:
 
 *To be updated as experiments complete.*
 
-| Run | MMLU | HumanEval | HellaSwag | Notes |
-|---|---|---|---|---|
-| Baseline | — | — | — | NL only |
-| Code-only | — | — | — | Code only |
-| Mixed-30 | — | — | — | 70/30 NL/Code |
-| Mixed-50 | — | — | — | 50/50 NL/Code |
+| Checkpoint | MMLU | HumanEval | HellaSwag |
+|---|---|---|---|
+| NFT (base) | — | — | — |
+| M1 (text 100%) | — | — | — |
+| M2 (code 100%) | — | — | — |
+| M3 (70/30) | — | — | — |
+| M4 (30/70) | — | — | — |
+| M5 (75/25) | — | — | — |
+| M6 (25/75) | — | — | — |
+| M7 (50/50) | — | — | — |
+| LoRA (M1) | — | — | — |
 
 ---
 
 ## Author
 
 **Noor Alam**  
-Data Science
+MS Data Science  
 [GitHub](https://github.com/NoorAlamJan) · [LinkedIn](https://linkedin.com/in/noor-alam-0a7122209)
