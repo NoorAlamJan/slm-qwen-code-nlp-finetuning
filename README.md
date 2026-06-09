@@ -4,7 +4,7 @@
 
 ## Overview
 
-This repository contains the full experimental pipeline for my MS thesis investigating how **code data mixture ratios** affect the capabilities of Small Language Models (SLMs). Using **Qwen2.5-0.5B** as the base model, we run controlled fine-tuning experiments across 7 dataset mixtures and evaluate the impact on language understanding, reasoning, and coding ability.
+This repository contains the full experimental pipeline  investigating how **code data mixture ratios** affect the capabilities of Small Language Models (SLMs). Using **Qwen2.5-0.5B** as the base model, we run controlled fine-tuning experiments across 7 dataset mixtures and evaluate the impact on language understanding, reasoning, and coding ability.
 
 The central research questions are:
 - Does exposure to code data during fine-tuning improve reasoning on non-code tasks?
